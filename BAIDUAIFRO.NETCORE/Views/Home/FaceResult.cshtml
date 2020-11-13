@@ -1,0 +1,95 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+@model FaceReconitionModel
+<div class="text-center">
+    @*<h2 class="display-4">Welcome</h2>*@
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <div class="btn-group btn-group-lg">
+
+        <button type="button" class="btn btn-primary" onclick="showCamera()">开启摄像头</button>
+        <a class="btn btn-danger" onclick="takePhoto()" asp-action="index">返回首页</a>
+    </div>
+    <div class="card " style="width:400px;height:auto;margin-left:355px;margin-top:20px">
+        <video id="video" style="width:400px;height:400px" autoplay="autoplay"></video>
+        <div class="card-body text-center">
+            <h4 class="font-weight-bold text-primary">欢迎你！@Model?.UserName</h4>
+            <div style="padding-bottom:20px !important">
+                <h6 class=" font-weight-bold "><span class="text-dark float-left">出生年月：@Model?.Month</span><span class="text-dark " style="padding-left:30px">性别：@Model?.Sex</span></h6>
+            </div>
+
+            <div>
+                <h6 class=" font-weight-bold"><span class="text-dark float-left">你的单位：@Model?.Works</span><span class="text-dark " style="padding-left:35px">住地：@Model?.Position</span></h6>
+            </div>
+        </div>
+        <br />
+    </div>
+</div>
+<div>
+</div>
+
+<script type="text/javascript">
+    /**
+     * 开启摄像头
+     */
+    window.onload = function () {
+        let _this = this;
+        $(".bg-content").css("display", "block");
+        let constraints = {
+            video: { width: 400, height: 400 },
+            audio: false
+        };
+        //获得video摄像头区域
+        let video = document.getElementById("video");
+        //这里介绍新的方法，返回一个 Promise对象
+        // 这个Promise对象返回成功后的回调函数带一个 MediaStream 对象作为其参数
+        // then()是Promise对象里的方法
+        // then()方法是异步执行，当then()前的方法执行完后再执行then()内部的程序
+        // 避免数据没有获取到
+        let promise = navigator.mediaDevices.getUserMedia(constraints);
+        promise.then(function (MediaStream) {
+            _this.mediaStreamTrack = typeof MediaStream.stop === 'function' ? MediaStream : MediaStream.getTracks()[1];
+            video.srcObject = MediaStream;
+            video.muted = true;
+            video.play();
+        }).catch(function (PermissionDeniedError) {
+            console.log(PermissionDeniedError);
+        });
+
+    };
+
+    /**
+     * 拍摄照片
+     */
+    function takePhoto() {
+        let video = document.getElementById("video");
+        let canvas = document.getElementById("canvasTake");
+        let ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, 400, 400);
+        ctx.scale(-1, 1);
+
+        //let img = document.getElementById("canvas").toDataURL("image/png");
+        //var triggerDownload = $("#downloadA").attr("href", img).attr("download", "micro-blog.png");
+        //triggerDownload[0].click();
+    }
+
+    /**
+     * 关闭摄像头
+     */
+    function closePhoto() {
+        this.MediaStreamTrack && this.MediaStreamTrack.stop();
+        $(".bg-content").css("display", "none");
+    }
+
+    function toBase64() {
+        //获得Canvas对象
+        let canvas = document.getElementById("canvasTake");
+        //从画布上获取照片数据
+        var imgData = canvas.toDataURL();
+        //将图片转换为Base64
+        var base64Data = imgData.substr(22);
+        console.log("base64Data:" + base64Data);
+    }
+</script>

@@ -1,0 +1,427 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+@model FaceReconitionModel
+<style>
+    .input-group {
+        padding-bottom: 10px;
+    }
+</style>
+<div class="bg-light">
+
+    <div class="text-center">
+        @*<h2 class="display-4">Welcome</h2>*@
+        <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+        <div class="btn-group btn-group-lg">
+
+            @*<button type="button" id="btn_show" class="btn btn-primary" onclick="closePhoto()">关闭摄像头</button>*@
+            <button type="button" class="btn btn-info" onclick="checkFace()" data-toggle="modal" data-target="#FaceAddModal">人脸注册</button>
+            <button type="button" class="btn btn-danger" onclick="reconFace()" data-toggle="modal" data-target="#checkModal">人脸识别</button>
+            <button type="button" class="btn btn-dark" onclick="scoreFace()" data-toggle="modal" data-target="#faceScoreModal">颜值打分</button>
+            <button type="button" class="btn btn-primary" id="btn_rcon" onclick="reconGesture()" data-toggle="modal" data-target="#gestureModal">手势识别</button>
+        </div>
+        <div class="card " style="width:400px;height:auto;margin-left:355px;margin-top:20px">
+            <video id="video" style="width:400px;height:400px" autoplay="autoplay"></video>
+            <canvas id="canvasShow" style="width:400px;height:400px ;display:none"></canvas>
+            @*<img class="card-img-top" src="https://static.runoob.com/images/mix/img_avatar.png" alt="Card image" style="width:100%">*@
+            <div class="card-body text-center">
+                <audio id="player" controls></audio>
+                <button onclick="start_reco()" class="btn btn-primary">开始录音</button>
+                <button onclick="ai_reco()" class="btn btn-danger">发送语音指令</button>
+                <h5 class="font-weight-bold text-primary" id="voiceText"></h5>
+                @*<a href="#" class="btn btn-primary" onclick="closePhoto()">识别结束</a>*@
+            </div>
+
+            <br />
+        </div>
+    </div>
+
+    <!-- 模态框（Modal） -->
+
+    <div class="modal fade" id="checkModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel">人脸识别结果</h4>
+                </div>
+                <div class="modal-body">
+                    <canvas id="canvasRecon" width="465" height="400" style=""></canvas>
+                    <h4 class="font-weight-bold text-primary">正在进行人脸识别....</h4>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info" data-dismiss="modal">关闭</button>
+                    <a type="submit" class="btn btn-danger" id="btn_result" asp-action="FaceResult">查看结果</a>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal -->
+    </div>
+
+    <div class="modal fade" id="faceScoreModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel">颜值打分</h4>
+                </div>
+                <div class="modal-body">
+                    <canvas id="canvasScore" width="465" height="400" style=""></canvas>
+                    <h4 class="font-weight-bold text-primary" id="faceScoreText"></h4>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info  btn_clearCanvas" data-dismiss="modal">关闭</button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal -->
+    </div>
+
+    <div class="modal fade" id="resultModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel">人脸识别结果</h4>
+                </div>
+                <div class="modal-body">
+                    <canvas class="canvasResut" width="465" height="400" style=""></canvas>
+                    <h4 class="font-weight-bold text-primary">欢迎你！@Model?.UserName</h4>
+                    <div style="padding-bottom:20px !important">
+                        <h5 class=" font-weight-bold "><span class="text-dark float-left">出生年月：@Model?.Month</span><span class="text-dark " style="padding-left:30px">你的性别：@Model?.Sex</span></h5>
+                    </div>
+                    <div>
+                        <h5 class=" font-weight-bold"><span class="text-dark float-left">你的单位：@Model?.Works</span><span class="text-dark " style="padding-left:35px">你的住地：@Model?.Position</span></h5>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info   btn_clearCanvas" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="FaceAddModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel2" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="myModalLabel2">人脸信息注册</h6>
+                </div>
+                <div class="modal-body">
+                    <canvas id="canvasCheck" width="465" height="400" style=""></canvas>
+                    <form class="bs-example bs-example-form" role="form" method="post" asp-action="FaceRegister" asp-controller="Home">
+                        <div class="input-group">
+
+                            <span class="input-group-addon text-center text-primary">你的姓名</span>
+                            <input type="text" class="form-control" style="width:300px; margin-left:30px" placeholder="请输入姓名" asp-for="UserName">
+                        </div>
+
+                        <div class="input-group">
+
+                            <span class="input-group-addon text-center text-primary">出生日期</span>
+                            <input type="date" style="width:300px;margin-left:30px" class="form-control" placeholder="出生年月" asp-for="Month">
+                        </div>
+
+                        <div class="input-group">
+
+                            <span class="input-group-addon text-center text-primary">你的性别</span>
+                            <input type="text" style="width:300px; margin-left:30px" class="form-control" placeholder="请输入性别" asp-for="Sex">
+                        </div>
+
+                        <div class="input-group">
+
+                            <span class="input-group-addon text-center text-primary">你的单位</span>
+                            <input type="text" style="width:300px; margin-left:30px" class="form-control" placeholder="请输入单位" asp-for="Works">
+                        </div>
+
+                        <div class="input-group">
+                            <span class="input-group-addon text-center text-primary">你的地址</span>
+                            <input type="text" class="form-control" style="width:300px; margin-left:30px" placeholder="请输入地址" asp-for="Position">
+                        </div>
+                        <button type="submit" class="btn btn-primary">提交信息</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="btn_close" class="btn btn-info   btn_clearCanvas" data-dismiss="modal">关闭</button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal -->
+    </div>
+
+    <div class="modal fade" id="gestureModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel">手势识别</h4>
+                </div>
+                <div class="modal-body">
+                    <canvas id="canvasGesture" width="465" height="400" style=""></canvas>
+                    <h4 class="font-weight-bold text-primary" id="gestureText"></h4>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info   btn_clearCanvas" data-dismiss="modal">关闭</button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal -->
+    </div>
+</div>
+<script src="~/lib/recorder/HZRecorder.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+    /**
+     * 开启摄像头
+     */
+    let _this = this;
+    window.onload = function () {
+
+        $(".bg-content").css("display", "block");
+        let constraints = {
+            video: { width: 400, height: 400 },
+            audio: false
+        };
+        //获得video摄像头区域
+        let video = document.getElementById("video");
+        //这里介绍新的方法，返回一个 Promise对象
+        // 这个Promise对象返回成功后的回调函数带一个 MediaStream 对象作为其参数
+        // then()是Promise对象里的方法
+        // then()方法是异步执行，当then()前的方法执行完后再执行then()内部的程序
+        // 避免数据没有获取到
+        let promise = navigator.mediaDevices.getUserMedia(constraints);
+        promise.then(function (MediaStream) {
+            _this.mediaStreamTrack = typeof MediaStream.stop === 'function' ? MediaStream : MediaStream.getTracks()[1];
+            video.srcObject = MediaStream;
+            video.muted = true;
+            video.play();
+        }).catch(function (PermissionDeniedError) {
+            console.log(PermissionDeniedError);
+        });
+    };
+
+    /**
+     * 拍摄照片
+     */
+
+    $(".btn_clearCanvas").click(function clearCanvas() {
+
+    })
+
+    function checkFace() {
+        let video = document.getElementById("video");
+        //获取网页中的canvas对象
+        var canvas = $('#canvasCheck')[0];
+        let ctx = canvas.getContext('2d');
+        //重新设置宽高，刷新画布
+        canvas.height = 465;
+        canvas.width = 400;
+        ctx.drawImage(video, 0, 0, 465, 400);
+        ctx.scale(-1, 1);
+        //调用convertCanvasToImage函数将canvas转化为img的base64格式
+        var img = convertCanvasToImage(canvas);
+
+        $.ajax({
+            url: '/Home/CheckIfUserHave',
+            type: 'post',
+            data: { "imgData64FromAjax": img.src },
+            dataType: 'json',
+            success: function (data) {
+                var jsonStr = JSON.stringify(data);
+                if (jsonStr != null) {
+                    var mymessage = confirm("用户名：" + jsonStr + "已经存在 ! 无法进行注册");
+                    if (mymessage == true) {
+                        $("#btn_close").click();
+                    }
+                    else {
+                        $("#btn_close").click();
+                    }
+                }
+            }
+        });
+
+    }
+
+    function scoreFace() {
+        let video = document.getElementById("video");
+        var canvas = $('#canvasScore')[0];
+        let ctx = canvas.getContext('2d');
+
+        canvas.height = 465;
+        canvas.width = 400;
+        //  ctx.clearRect(0, 0, 465, 400);
+        ctx.drawImage(video, 0, 0, 465, 400);
+        ctx.scale(-1, 1);
+        var img = convertCanvasToImage(canvas);
+        $.ajax({
+            url: '/Home/FaceScore',
+            type: 'post',
+
+            dataType: 'json',
+            data: { "imgData64FromAjax": img.src },
+            success: function (jsonStr) {
+                var data = JSON.stringify(jsonStr);
+                var number = parseInt(data);
+                if (number < parseInt(60)) {
+                    console.log(parseInt(60));
+                    $("#faceScoreText").html("您的颜值分数为：" + number + "分，对不起，百度AI看走眼了")
+                }
+                else if (number > parseInt(60) && number < parseInt(90)) {
+                    $("#faceScoreText").html("您的颜值分数为：" + number + "分，     您的颜值超过了平均水平")
+                }
+                else {
+                    $("#faceScoreText").html("您的颜值分数为：" + number + " 分，    颜值爆表啊！")
+                }
+
+            }
+        })
+
+        //let img = document.getElementById("canvas").toDataURL("image/png");
+        //var triggerDownload = $("#downloadA").attr("href", img).attr("download", "micro-blog.png");
+        //triggerDownload[0].click();
+    }
+
+    function reconFace() {
+        let video = document.getElementById("video");
+        var canvas = $('#canvasRecon')[0];
+        //
+        let ctx = canvas.getContext('2d');
+        canvas.height = 465;
+        canvas.width = 400;
+        ctx.drawImage(video, 0, 0, 465, 400);
+        ctx.scale(-1, 1);
+        var img = convertCanvasToImage(canvas);
+        $.ajax({
+            url: '/Home/FaceDistinguish',
+            type: 'post',
+            dataType: 'json',
+            data: { "faceImgData64": img.src },
+            success: function (data) {
+                // console.log(data);
+                if (!data.match("^\{(.+:.+,*){1,}\}$")) {
+                    $("#btn_result").click();
+                }
+                var jsonStr = JSON.stringify(data);
+                var myMessage = confirm(jsonStr);
+                if (myMessage == true) {
+
+                    $("#btn_result").click()
+
+                }
+                else {
+                    $("#btn_close").click();
+                }
+
+            }
+        })
+
+        //let img = document.getElementById("canvas").toDataURL("image/png");
+        //var triggerDownload = $("#downloadA").attr("href", img).attr("download", "micro-blog.png");
+        //triggerDownload[0].click();
+    }
+
+    function reconGesture() {
+        let video = document.getElementById("video");
+        var canvas = $('#canvasGesture')[0];
+        let ctx = canvas.getContext('2d');
+        //
+        canvas.height = 465;
+        canvas.width = 400;
+        ctx.drawImage(video, 0, 0, 400, 400);
+        ctx.scale(-1, 1);
+        var img = convertCanvasToImage(canvas);
+        $.ajax({
+            url: '/Gesture/GestureFromWeb',
+            type: 'post',
+            dataType: 'json',
+            data: { "imgData64FromAjax": img.src },
+            success: function (jsonStr) {
+                var data = JSON.stringify(jsonStr);
+                console.log(data);
+                $("#gestureText").html("手势识别结果为：" + data);
+
+            }
+        })
+
+        //let img = document.getElementById("canvas").toDataURL("image/png");
+        //var triggerDownload = $("#downloadA").attr("href", img).attr("download", "micro-blog.png");
+        //triggerDownload[0].click();
+    }
+
+    //从 canvas 提取图片 image
+    function convertCanvasToImage(canvas) {
+        //新Image对象，可以理解为DOM
+        var image = new Image();
+        // canvas.toDataURL 返回的是一串Base64编码的URL
+        // 指定格式 PNG
+        image.src = canvas.toDataURL("image/png");
+        return image;
+    }
+
+    /**
+     * 关闭摄像头
+     */
+    function closePhoto() {
+        this.MediaStreamTrack && this.MediaStreamTrack.stop();
+        $(".bg-content").css("display", "none");
+    }
+
+    function toBase64(canvas) {
+
+        var imgData = canvas.toDataURL();
+        //将图片转换为Base64
+        var base64Data = imgData.substr(22);
+        return base64Data;
+        console.log("base64Data:" + base64Data);
+    }
+</script>
+
+<script type="text/javascript">
+    var reco = null;
+    // var audio_context = new AudioContext();//音频内容对象
+    navigator.getUserMedia = (navigator.getUserMedia ||
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia ||
+        navigator.msGetUserMedia); // 兼容其他浏览器
+
+    navigator.getUserMedia({ audio: true }, create_stream, function (err) {
+        console.log(err)
+    });
+
+    function create_stream(user_media) {
+        //这里写死sampleRate: 16000
+        var audio_context = new AudioContext({ sampleRate: 16000 });//音频内容对象
+        var stream_input = audio_context.createMediaStreamSource(user_media);
+        reco = new Recorder(stream_input, {
+            numChannels: 1
+        });
+
+    }
+    var clock = '';
+    function start_reco() {
+        reco.record();
+        clock = setInterval(ai_reco, 10000)
+        console.log("666")
+    }
+
+    function ai_reco() {
+        reco.stop();
+        clearInterval(clock);
+        reco.exportWAV(function (wav_file) {
+            console.log(wav_file);
+            var formdata = new FormData(); // form 表单 {key:value}
+            formdata.append("audio", wav_file); // form input type="file"
+
+            $.ajax({
+                url: "/Recorder/RecorderVoice",
+                type: 'post',
+                processData: false,
+                contentType: false,
+                data: formdata,
+                dataType: 'json',
+                success: function (jsonStr) {
+
+                    var data = JSON.stringify(jsonStr);
+                    if (data.search("手势识别") != -1) {
+                        $("#btn_rcon").click();
+                    }
+                    $("#voiceText").html("语音识别结果：" + data);
+                    //  document.getElementById("player").src = "/get_audio/" + data.filename;
+                }
+            })
+        });
+        reco.clear();
+    }
+</script>
